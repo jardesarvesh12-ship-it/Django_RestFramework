@@ -1,0 +1,514 @@
+python -m venv venv 
+venv\Scripts\activate 
+
+pip install django 
+pip install djangorestframework
+
+django-admin startproject gs1
+cd gs1
+python manage.py startapp api
+
+
+
+GOTO >>>>  GS1 >>>> SETTINGS.PY >>>> INSTALLED_APPS >>> ADD >>> in INSTALLED_APPS =[rest_freamework , api]
+
+
+1. Go To >>>> api >>>> models.py and create models.py
+
+1.1 --------> Fields ------->
+* In models.py file when we add File & Media Fields we need to configure media settings in settings.py:-->
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+** In urls.py
+urlpatterns = [
+    Urls for endpoints
+]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+
+1.2 ----------> save changes ---->
+
+python manage.py makemigrations  ----> Applies model changes to database.
+python manage.py migrate         ----> saves model changes to database.
+
+1.3 -------> Create superuser --------->
+python manage.py createsuperuser 
+
+
+
+2. Go TO >>>> gs1 >>>> api >>>>  create serializers.py
+
+3. Go TO >>>> gs1 >>>> api >>> in admin.py  TO REGISTER YOUR MODEL
+
+4. Go TO >>>> gs1 >>>> api >>> in seriealizers.py  create serializers
+
+5. Go TO >>>> gs1 >>>> api >>> in views.py create views.py it helps to get data from database and send it to frontend
+
+6. GO TO >>>>  gs1 >>>> in urls.py add endpoints
+
+
+
+
+
+
+
+
+
+
+Python JSON---
+1. it's built in package called json, which is used to work with json data 
+2. dumps(data) ---> Used to convert python object to json string.
+
+3. loads(data) ---> Used to convert json string to python object.
+JSONRenderer---> this is used to render serialized data into json which is understable by frontend 
+
+
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+define --> It is defined as "ModelSerializer is used for converting Models / Database Table INTO JSON Format".
+
+Djano Serializers Fields and Core Arguments------->
+
+>>> Fields (fields in serializer) >>> serializers.py
+* used to convert model object into python dict, and convert python dict to model object.
+
+
+>>> In the Django REST Framework (DRF), core arguments are specific parameters used when defining serializer fields to control how data is validated,
+transformed, and displayed.
+
+Serializer Arguments 
+1. many (bool) — Controls list serialization
+2. read_only (bool) — Prevents write operations (e.g., input/update)
+3. write_only (bool) — Prevents automatic output (useful for passwords)
+4. required (bool) — Whether a field must be present during deserialization
+5. allow_null (bool) — Allows null/None values
+6. default — Fallback value when no input is provided
+7. source — Field name mapping from the model/object
+8. label — Custom human-readable label
+9. validators — Custom validation callables
+10. error_messages — Custom error message templates
+
+e.g. :-> 
+
+from rest_framework import serializers
+
+class StudentSerializer(serializers.Serializer):
+    # Field with custom arguments
+    name = serializers.CharField(max_length=100, required=True, allow_null=False)
+    
+    # Read-only field (only output, no input)
+    id = serializers.IntegerField(read_only=True) 
+    
+    # Write-only field (only input, no output) - used for passwords
+    password = serializers.CharField(write_only=True) 
+    
+    # Field with a default value
+    status = serializers.CharField(default="active")
+    
+    # Field with source (maps to a different model attribute)
+    student_code = serializers.CharField(source="roll_number")
+    
+    # Field with custom validation
+    def validate_age(self, value):
+        if value < 18:
+            raise serializers.ValidationError("Age must be at least 18")
+        return value
+
+
+
+
+De-serialization --> responsible for converting data from json to python format  (by using create() and update() method)
+
+1. BytesIO() ---> BytesIO() is used to work with binary data in memory , such as images , files , etc.
+e.g ---> 
+>>>gs1 >>>> api >>>> views.py 
+
+from io import BytesIO
+# Create a binary buffer in memory
+buffer = BytesIO()
+buffer.write(b'Hello, binary world!')
+buffer.seek(0)  # Go back to the beginning of the buffer
+data = buffer.read()
+buffer.close()
+
+
+
+JSONParser ---> It is used to parse data from json to python dict.
+>>>gs1 >>>> api >>>> views.py 
+
+from rest_framework.parsers import JSONParser
+parser = JSONParser()                      # Create a parser instance
+python_data = parser.parse(request.body)   # Parse JSON data into Python objects
+
+deserialization allows parsed data to be converted back info complex types , after first validating the incoming data
+e.g --> 
+from rest_framework.parsers import JSONParser
+parser = JSONParser()  # Create a parser instance
+persisted_object = Student.objects.get(pk=1)  # Get a model instance from the database
+serializer = StudentSerializer(persisted_object)  # Initialize serializer with the model instance
+
+
+serializer.valid_data    ---->   (serializer.is_valid())
+returns a Python dict containing only the validated data, ready for use (e.g., saving to the database).
+
+serializer.errors   ---->   (serializer.is_valid())
+returns a dictionary containing detailed error messages if the data is invalid.
+
+serializer create data / insert data --->
+
+1.  e.g >>>> (Serializer Method)
+
+class StudentSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    name = serializers.CharField(max_length=100)
+    age = serializers.IntegerField()
+    city = serializers.CharField(max_length=100)
+
+    def create(self, validated_data):
+        return Student.objects.create(**validated_data)
+
+# serializer update data ---> 
+def update(self, instance, validated_data):
+    instance = Student.objects.get(id=validated_data.get('id'))
+    instance.name = validated_data.get('name', instance.name)
+    instance.age = validated_data.get('age', instance.age)
+    instance.city = validated_data.get('city', instance.city)
+    instance.save()
+    return instance
+
+#    
+
+
+
+CRUD operations
+
+1. Update Data 
+we have 2 ways to update data in django DRF
+    1. PUT ---> Full Update 
+    2. PATCH ---> Partial Update 
+
+e.g. >>>> 
+
+>>>1. PUT ---> Full Update 
+    require all data from frontend 
+    e.g. >>>> 
+
+    serializer = StudentSerializer(stu, data=python_data)
+    if serializer.is_valid():  # Vali date the data
+        serializer.save()  # Save the updated data
+
+
+>>>>> 2. PATCH ---> Partial Update 
+
+class StudentSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only = True)  # read only means it is only for display read data.
+    name = serializers.CharField(max_length = 100)
+    age = serializers.IntegerField()
+    city = serializers.CharField(max_length = 100)
+
+    def update(self, instance, validated_data): # instance:- represents the old data, validated_data:- represents the new data
+        
+        # Update fields
+        instance.name = validated_data.get('name', instance.name)
+        instance.age = validated_data.get('age', instance.age)
+        instance.city = validated_data.get('city', instance.city)
+
+        # Save the updated instance
+        instance.save()
+        return instance
+
+
+
+
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> proj gs3 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+django-admin startproject gs3
+
+venv\Scripts\activate 
+cd gs3
+
+1. gs3 >>> gs3 >>> settings.py >> rest_framework, api 
+
+2. gs3 >>> api >>> create models.py 
+2.1 ----------> save changes ---->
+python manage.py makemigrations  ----> Applies model changes to database.
+python manage.py migrate         ----> saves model changes to database.
+ 
+
+3. Create Superuser 
+python manage.py createsuperuser
+
+
+4. Register Model in Admin.py   
+Go To  gs3 >>> gs3 >>>> api >>>> admin.py 
+
+
+5. Create serializers.py
+Go To  gs3 >>> gs3 >>>> api >>>> serializers.py 
+
+
+6. go to  gs3 >>> gs3 >>>> api >>>>  write views.py
+
+7. go to  gs3 >>> gs3 >>>> api >>>>  urls.py  ----> write  path('student-api/', views.student_api), 
+
+
+8. go to gs3 >>>> myapp.py >>> used for send request to frontend / backend via third party 
+it is used to read(GET) data from backend end-point. 
+
+in terminal run>> To GET  data in terminal >> python myapp.py
+
+
+
+9. #### Post Data using api  >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+in gs3 >> api >> serializer.py >> implement Create Method
+
+1. goto >> gs3 >>>> myapp.py >>>> and write function to save data 
+2. Goto >>> views.py >>> and write code for POST data
+3. #  For POST DATA INTO DATABASE 
+4. python myapp.py --->> in terminal    ---->> 
+
+
+
+
+>>>>>>>>>>>>>>>>>>https://www.youtube.com/watch?v=tmy5g3lQWcM&list=PLbGui_ZYuhijTKyrlu-0g5GcP9nUp_HlN&index=9
+
+42.17 mi
+
+
+10. Update Data using api  >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+1. ---> goto gs3 >> api >> write code for update in serializer.py 
+
+2. ---> Goto gs3 >> myapp.py >> and write function to update data
+
+3. ---> after that goto gs3 >> api >> views.py >>>> and write code for update in views.py 
+
+
+
+11. Delete Data using api  >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+1. goto ---> gs3 >> myapp.py >> write function for delete
+
+2. goto ---> gs3 >> api >> views.py >>>> write code for delete
+
+3. python myapp.py --->> in terminal    ---->> 
+
+
+
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> proj gs4 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+this gs4 use to create models using Class based views 
+
+django-admin startproject gs4
+
+venv\Scripts\activate 
+
+cd gs4
+
+python manage.py startapp api
+
+
+python manage.py makemigrations  ----> Applies model changes to database.
+python manage.py migrate         ----> saves model changes to database.
+ 
+
+gs4 >> api >> write code views.py
+
+gs4 >> gs4 >> urls.py edit
+
+
+
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> proj gs5 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+Validation in Django rest_framework
+
+django-admin startproject gs5
+python manage.py startapp api
+
+venv\Scripts\activate 
+cd gs5
+
+python manage.py makemigrations  ----> Applies model changes to database.
+python manage.py migrate         ----> saves model changes to database.
+ 
+
+GOTO gs5 >> seriealizers.py >> write validation
+
+
+---> Validation is used to validate data at the time of POST data
+
+---> we have 3 types to write a validation 
+
+1. Field Level validation  ( in serializers.py ) 
+2.  Object Level validation  ( in serializers.py )
+3.   Validators ( in serializers.py ) 
+
+1. Field Level validation  >> we can specify validation in field level by using validate_fieldname() method
+                           >> it is used to validate single field
+                           >> validate field_name methods should return the validate value or rise a serializers.ValidationError
+
+                           e.g. >>>> whaen we POST data 
+                           from rest_framework import serializers
+
+                           class StudentSerializer(serializers.Serializer):
+                                name = serializers.CharField(max_length = 100)
+                                roll = serializers.IntegerField(max_length = 3)
+                                city = serializers.CharField(max_length = 100)
+                           
+                           def validate_roll(self, value):
+                                    if value >= 200:
+                                        raise serializers.ValidationError("Seat Full")
+                                    return value 
+
+2. Object Level Validation >> it is used to validate multiple fields at the time of POST data
+                           >>
+
+                           e.g. >>>> whaen we POST data 
+                           from rest_framework import serializers
+
+                           class StudentSerializer(serializers.Serializer):
+                                name = serializers.CharField(max_length = 100)
+                                roll = serializers.IntegerField(max_length = 3)
+                                city = serializers.CharField(max_length = 100)
+
+                                def validate(self, data):
+                                    nm = data.get('name')
+                                    ct = data.get('city')
+                                        if nm.lower() == 'Shav' and ct.lower() != 'Pune':
+                                            raise serializers.ValidationError("City must be Pune")
+                                        return data 
+
+3.   Validators >> It is used to validate multiple fields
+                 >> we want to place our validation logic into resuable components, so that it can be reused throughout our codebase
+                 >> Advantages : 1. It introduce proper sepration of concerns, making your code behaviour more obious
+                 >>             2. it is easy to shift between ModelSerializer class and using explicit serializerclass
+                 
+
+                 e.g>>
+
+                 from rest_framework import serializers
+
+                 class StudentSerializer(serializers.Serializer):
+                    name = serializers.CharField(max_length=100)
+                    roll = serializers.IntegerField(max_length=3)
+                    city = serializers.CharField(max_length=100)
+
+
+
+                    def start_with_r(value):
+                        if value['0'].lower() != 'r':
+                            raise serializers.ValidationError("Name must start with r")
+                        return value 
+
+                    class StudentSerializer(serializers.Serializer):
+                        name = serializers.CharField(max_length = 100, validators = [start_with_r]) 
+                        roll = serializers.IntegerField(max_length = 3)
+                        city = serializers.CharField(max_length = 100)
+
+
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> proj gs6 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+ModelSerializer class
+
+django-admin startproject gs6
+python manage.py startapp api
+
+venv\Scripts\activate 
+cd gs6
+
+python manage.py makemigrations  ----> Applies model changes to database.
+python manage.py migrate         ----> saves model changes to database.
+ 
+
+
+--->  ModelSerializer Class
+1.  the ModelSerializer class provide a shortcut that lets you antomatically create a serializer class with files that correspond to the model fields
+
+2. ModelSerializer class is the same as regular serializer class , insted of:
+        * it will automatically generate set of fields for you, based on the model.
+        * it will automatically generate validators for the serializer, such as unique_together validators
+        * it include simple defult implementations of create() and update()
+
+
+in serializer.py
+
+from rest_framework import serializers 
+from .models import Student 
+
+class StudentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Student
+        fields = ['name', 'roll', 'city']
+
+
+    # Note : If we not write Meta class then we have to write all the fields manually
+    #        like : name = serializers.CharField(max_length=100), roll = serializers.IntegerField(), city = serializers.CharField(max_length=100)
+
+    *fields= '__all__' ---> it will automatically generate set of files for you, based on the model.
+
+    *exclude= ['roll']  ---> it will exclude the roll field from the serializer.
+
+
+
+**************************
+---->in serializer.py
+from rest_framework import serializers 
+from .models import Student 
+
+class StudentSerializer(serializers.ModelSerializer):
+    name = serializers.CharField(read_only=True)       # read_only=True means we can not change the name field
+    
+    class Meta: 
+        model = Student
+        fields = ['name', 'roll', 'city']
+
+
+**************************
+---->in serializer.py
+from rest_framework import serializers 
+from .models import Student 
+
+class StudentSerializer(serializers.ModelSerializer): 
+    class Meta: 
+        model = Student
+        fields = ['name', 'roll', 'city']
+        read_only_fields =['name','roll'] 
+
+
+
+# ********************* ModelSerializer Validation* *********************
+
+
+# 3. Validators Level Validation
+def start_with_r(value):
+    if value['0'].lower() != 'r':
+        raise serializers.ValidationError("Name must start with r")
+    return value 
+
+
+from rest_framework import serializer
+class StudentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Student
+        fields = ['name', 'roll', 'city']
+
+
+# Fiels Level Validation
+    def validate_roll(self, value):
+        if value >= 200:
+            raise serializers.ValidationError("Seat Full")
+        return value 
+
+
+#  2. Object Level Validation --> we can use validate to perform object level validation
+def validate(self, data):
+    nm = data.get('name')
+    ct = data.get('city')
+    if nm.lower() == 'Shav' and ct.lower() != 'Pune':
+        raise serializers.ValidationError("City must be Pune")
+    return data 
+
+    

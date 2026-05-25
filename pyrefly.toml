@@ -1,0 +1,6 @@
+[default]
+search_path = [
+    "gs1",
+    "gs3",
+    "gs4",
+]
