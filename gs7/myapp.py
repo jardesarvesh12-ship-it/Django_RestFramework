@@ -1,7 +1,6 @@
 #  This is a 3rd party app we use this for where to send a requent and recieve a response from frontend
 
 # pyrefly: ignore [missing-import]
-from email import header
 import requests
 import json
 
@@ -18,7 +17,7 @@ def get_data(id = None):
         data = r.json()
         print(data)
 
-# get_data()
+get_data()
 
 
 # ====================>> POST DATA INTO DATABASE
@@ -38,9 +37,8 @@ def post_data():
 def update_data():
     data = { 'id':5,'name':'John', 'roll':106, 'city':'New Jersy'}  #python dict
 
-    headers = {'content-type' : 'appliction/json'}
     json_data = json.dumps(data)                            # convert python dict to json data
-    r = requests.put(url=URL,headers=header, data=json_data)               # send json data to the API
+    r = requests.put(url=URL, data=json_data)               # send json data to the API
     data = r.json()                                         # convert json data to python dict
     print(data) 
 

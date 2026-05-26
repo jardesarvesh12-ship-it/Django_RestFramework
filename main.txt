@@ -343,8 +343,8 @@ GOTO gs5 >> seriealizers.py >> write validation
 ---> we have 3 types to write a validation 
 
 1. Field Level validation  ( in serializers.py ) 
-2.  Object Level validation  ( in serializers.py )
-3.   Validators ( in serializers.py ) 
+2. Object Level validation  ( in serializers.py )
+3. Validators ( in serializers.py ) 
 
 1. Field Level validation  >> we can specify validation in field level by using validate_fieldname() method
                            >> it is used to validate single field
@@ -384,7 +384,7 @@ GOTO gs5 >> seriealizers.py >> write validation
 3.   Validators >> It is used to validate multiple fields
                  >> we want to place our validation logic into resuable components, so that it can be reused throughout our codebase
                  >> Advantages : 1. It introduce proper sepration of concerns, making your code behaviour more obious
-                 >>             2. it is easy to shift between ModelSerializer class and using explicit serializerclass
+                 >>              2. it is easy to shift between ModelSerializer class and using explicit serializerclass
                  
 
                  e.g>>
@@ -511,4 +511,111 @@ def validate(self, data):
         raise serializers.ValidationError("City must be Pune")
     return data 
 
+
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> proj gs7 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+Function based api view
+
+1. It provide a few bites of functionality recive request instance in your view and adding context to your respose object 
     
+2. It also provide 405 method Not Allowed respose when appropriate and and handling any parseError Exception
+3. It can also provide 500 Server Error response when appropriate
+    
+4. By Defult GET method will be accepted if another method is not accepted it will respond 405 "Method Not Allowed"
+   >>> @api_view()
+
+   >>> @api_view([ 'GET' , 'POST' , 'PUT' , 'PATCH' , 'DELETE' ])...
+
+
+5. GET Student Data------------------------------
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+
+@api_view(['GET']) 
+def student_list(request):
+    if request.method == 'GET':
+        stu = Student.object.all()
+        serializer=StudentSerializer(stu, many=True)
+    
+
+6. POST Student Data------------------------------
+
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+
+@api_view(['POST'])
+def student_create(request):
+    if request.method == 'POST':
+        serializer = StudentSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            res {'msg': 'Data Created'}
+            return Response(res, status=status.HTTP_201_CREATED)
+
+
+***********************Request************
+in REST Framework Request object provide flexible request parsing that allows you to treat request with JSON Data  or another media data
+
+1. request.data --> It helps to parse the request data like when we are posting JSON data
+2. request.method --> it helps to identify the type of request like POST, GET, PUT, PATCH, DELETE
+3. request.query_params --> It helps to get the query parameters from the request url like  ?search=xyz
+4. request.user --> it access the user authentication details
+
+***********************Response************
+in REST Framework support HTTP content negotiation and automatically renders response objects into appropriate format.
+
+1. Response() -> it is a response class that is used to return the response
+2. status -> it is a status code that is used to return the status code like 200, 201, 400, 401, 404, 500
+3. content -> it is a content that is used to return the content like json data
+4. headers -> it is a headers that is used to return the headers like content-type, content-length
+5. data -> it is a data that is used to return the data like json data 
+
+
+django-admin startproject gs7
+python manage.py startapp api
+
+venv\Scripts\activate 
+cd gs7
+
+python manage.py makemigrations  ----> Applies model changes to database.
+python manage.py migrate  
+
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> proj gs8 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+CRUD opreation using Funtion Based api_view
+
+django-admin startproject gs8
+python manage.py startapp api
+
+venv\Scripts\activate 
+cd gs8
+
+python manage.py makemigrations  ----> Applies model changes to database.
+python manage.py migrate  
+
+
+1 . GOTO >> gs8 >> gs8 >> settings.py Register Your Model
+
+2. GOTO >> gs8 >> api >> model.py wrie models
+
+3. GOT >> gs8 >> api >> admin.py Register your model
+
+4. makemigrations
+
+5. Create Superuser
+python manage.py createsuperuser
+
+6. create serializers.py write code 
+
+7. Create views function in vewes.py
+
+
+
+
+
+
+
+
+https://www.youtube.com/watch?v=IlGguIgO5x4&list=PLbGui_ZYuhijTKyrlu-0g5GcP9nUp_HlN&index=13
